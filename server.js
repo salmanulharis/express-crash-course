@@ -15,6 +15,14 @@ let posts = [
 
 // Get all post
 app.get('/api/posts', (req, res) => {
+    const limit = parseInt(req.query.limit);
+
+    if(!isNaN(limit) && limit > 0){
+        res.json(posts.slice(0, limit));
+    } else {
+        res.json(posts);
+    }
+    
     res.json(posts);
 })
 
