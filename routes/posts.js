@@ -1,4 +1,5 @@
 import express from 'express';
+import { title } from 'process';
 const router = express.Router();
 
 let posts = [
@@ -32,8 +33,14 @@ router.get('/:id', (req, res) => {
 
 // Create new post
 router.post('/', (req, res) => {
-    console.log(req.body);
-
+    const newPost = {
+        id: posts.length + 1,
+        title: req.body.title
+    };
+    if(!newPost.title){
+        return res.status(400).json({ msg: 'Please include a title'});
+    }
+    posts.push(newPost);
     res.status(201).json(posts);
 })
 
