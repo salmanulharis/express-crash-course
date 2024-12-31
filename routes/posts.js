@@ -8,13 +8,8 @@ let posts = [
     {id: 3, title: "Post Three"}
 ];
 
-const logger = (req, res, next) => {
-    console.log(`${req.method}`);
-    next();
-}
-
 // Get all post
-router.get('/', logger, (req, res) => {
+router.get('/', (req, res) => {
     const limit = parseInt(req.query.limit);
 
     if(!isNaN(limit) && limit > 0){
