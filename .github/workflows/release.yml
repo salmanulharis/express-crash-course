@@ -29,6 +29,7 @@ jobs:
       - name: Create temporary directory for zip files
         run: |
           mkdir zip_files
+          mkdir zip_files/${{ steps.tag.outputs.tag_name }}
           # Copy all files except those to be excluded for non-RC releases
           if [ "${{ steps.tag.outputs.is_rc }}" = "false" ]; then
             echo "Creating zip without excluded files..."
@@ -36,21 +37,21 @@ jobs:
               --exclude 'sample.txt' \
               --exclude 'sample/sample2.txt' \
               --exclude 'debug/' \
-              ./ zip_files/
+              ./ zip_files/${{ steps.tag.outputs.tag_name }}/
           else
             echo "Creating RC zip with all files..."
-            rsync -av ./ zip_files/
+            rsync -av ./ zip_files/${{ steps.tag.outputs.tag_name }}/
           fi
 
-      - name: Create ZIP archive
+      - name: Create ZIP archive with a custom name
         run: |
           cd zip_files
-          zip -r "../${{ steps.tag.outputs.tag_name }}.zip" .
+          zip -r "../custom_name_${{ steps.tag.outputs.tag_name }}.zip" .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ steps.tag.outputs.tag_name }}.zip
+          files: custom_name_${{ steps.tag.outputs.tag_name }}.zip
           draft: false
           prerelease: ${{ steps.tag.outputs.is_rc }}
         env:
