@@ -1,0 +1,61 @@
+name: Release Processing
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  process-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get tag info
+        id: tag
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          # Check if this is a release candidate
+          if [[ $TAG_NAME =~ .*-rc[0-9]+$ ]]; then
+            echo "is_rc=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_rc=false" >> $GITHUB_OUTPUT
+          fi
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create temporary directory for release files
+        run: |
+          mkdir release_files
+          # Copy all files except those to be excluded for non-RC releases
+          if [ "${{ steps.tag.outputs.is_rc }}" = "false" ]; then
+            rsync -av \
+              --exclude 'sample.txt' \
+              --exclude 'sample/sample2.txt' \
+              --exclude 'debug/' \
+              ./ release_files/
+          else
+            rsync -av ./ release_files/
+          fi
+
+      - name: Rename files
+        run: |
+          cd release_files
+          if [ -f "original_name.txt" ]; then
+            mv original_name.txt new_name.txt
+          fi
+
+      - name: Create ZIP archive
+        run: |
+          cd release_files
+          zip -r "../${{ steps.tag.outputs.tag_name }}.zip" .
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.tag.outputs.tag_name }}.zip
+          draft: false
+          prerelease: ${{ steps.tag.outputs.is_rc }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
