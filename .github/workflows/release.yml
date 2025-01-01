@@ -1,11 +1,11 @@
-name: Release Processing
+name: Create Release ZIP
 on:
   push:
     tags:
       - '*'
 
 jobs:
-  process-release:
+  create-zip:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,58 +23,30 @@ jobs:
             echo "is_rc=false" >> $GITHUB_OUTPUT
           fi
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          # Debug output
-          echo "Tag name: $TAG_NAME"
-          echo "Is RC: $(cat $GITHUB_OUTPUT | grep is_rc)"
 
-      - name: List files before exclusion
+      - name: Create temporary directory for zip files
         run: |
-          echo "Current directory contents:"
-          ls -la
-          echo "Checking if files exist:"
-          [ -f "sample.txt" ] && echo "sample.txt exists" || echo "sample.txt does not exist"
-          [ -f "sample/sample2.txt" ] && echo "sample/sample2.txt exists" || echo "sample/sample2.txt does not exist"
-          [ -d "debug" ] && echo "debug directory exists" || echo "debug directory does not exist"
-
-      - name: Create temporary directory for release files
-        run: |
-          mkdir release_files
+          mkdir zip_files
           # Copy all files except those to be excluded for non-RC releases
           if [ "${{ steps.tag.outputs.is_rc }}" = "false" ]; then
-            echo "Creating release without excluded files..."
-            rsync -av --progress \
+            echo "Creating zip without excluded files..."
+            rsync -av \
               --exclude 'sample.txt' \
               --exclude 'sample/sample2.txt' \
               --exclude 'debug/' \
-              ./ release_files/
+              ./ zip_files/
           else
-            echo "Creating RC release with all files..."
-            rsync -av --progress ./ release_files/
+            echo "Creating RC zip with all files..."
+            rsync -av ./ zip_files/
           fi
-
-      - name: List files after exclusion
-        run: |
-          echo "Release directory contents:"
-          ls -la release_files/
-          echo "Checking excluded files in release directory:"
-          [ -f "release_files/sample.txt" ] && echo "sample.txt was not excluded" || echo "sample.txt was excluded"
-          [ -f "release_files/sample/sample2.txt" ] && echo "sample/sample2.txt was not excluded" || echo "sample/sample2.txt was excluded"
-          [ -d "release_files/debug" ] && echo "debug directory was not excluded" || echo "debug directory was excluded"
 
       - name: Create ZIP archive
         run: |
-          cd release_files
+          cd zip_files
           zip -r "../${{ steps.tag.outputs.tag_name }}.zip" .
-          cd ..
-          echo "ZIP contents:"
-          unzip -l "${{ steps.tag.outputs.tag_name }}.zip"
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: Upload zip as artifact
+        uses: actions/upload-artifact@v3
         with:
-          files: ${{ steps.tag.outputs.tag_name }}.zip
-          draft: false
-          prerelease: ${{ steps.tag.outputs.is_rc }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: release-zip
+          path: ${{ steps.tag.outputs.tag_name }}.zip
