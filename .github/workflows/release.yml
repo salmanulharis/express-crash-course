@@ -7,8 +7,10 @@ on:
 jobs:
   create-zip:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write    # Need this permission to create releases
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -45,8 +47,11 @@ jobs:
           cd zip_files
           zip -r "../${{ steps.tag.outputs.tag_name }}.zip" .
 
-      - name: Upload zip as artifact
-        uses: actions/upload-artifact@v3
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: release-zip
-          path: ${{ steps.tag.outputs.tag_name }}.zip
+          files: ${{ steps.tag.outputs.tag_name }}.zip
+          draft: false
+          prerelease: ${{ steps.tag.outputs.is_rc }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
