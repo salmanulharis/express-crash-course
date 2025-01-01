@@ -29,7 +29,7 @@ jobs:
       - name: Create temporary directory for zip files
         run: |
           mkdir zip_files
-          mkdir zip_files/${{ steps.tag.outputs.tag_name }}
+          mkdir zip_files/acoomf_express
           # Copy all files except those to be excluded for non-RC releases
           if [ "${{ steps.tag.outputs.is_rc }}" = "false" ]; then
             echo "Creating zip without excluded files..."
@@ -37,21 +37,21 @@ jobs:
               --exclude 'sample.txt' \
               --exclude 'sample/sample2.txt' \
               --exclude 'debug/' \
-              ./ zip_files/${{ steps.tag.outputs.tag_name }}/
+              ./ zip_files/acoomf_express/
           else
             echo "Creating RC zip with all files..."
-            rsync -av ./ zip_files/${{ steps.tag.outputs.tag_name }}/
+            rsync -av ./ zip_files/acoomf_express/
           fi
 
-      - name: Create ZIP archive with a custom name
+      - name: Create ZIP archive with custom names
         run: |
           cd zip_files
-          zip -r "../custom_name_${{ steps.tag.outputs.tag_name }}.zip" .
+          zip -r "../acoomf_express${{ steps.tag.outputs.tag_name }}.zip" acoomf_express
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: custom_name_${{ steps.tag.outputs.tag_name }}.zip
+          files: acoomf_express${{ steps.tag.outputs.tag_name }}.zip
           draft: false
           prerelease: ${{ steps.tag.outputs.is_rc }}
         env:
